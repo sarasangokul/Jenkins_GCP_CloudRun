@@ -159,7 +159,7 @@ Ctrl + C to exit logs
 In your GitHub Account, 
 1. Create a PAT  with scope (repo & admin:repo_hook), and 
 2. Add it as a Credential (Kind: Username with Psswd) on Jenkins UI
-    1. Username:    iQuantC
+    1. Username:    GitHub Username here
     2. Password:    PAT here
 3. Create Pipeline Job with Definition: "Pipeline script from SCM", and complete the fields SCM, Repository URL, Credentials, Branch Specifier, and Script Path. 
 4. Apply and Save when done.
@@ -324,20 +324,6 @@ Trivy is already set up.
 Now, scan the docker image with Trivy.
 
 
-
-## Login, Tag & Push Docker Image to DockerHub
-1. Login to your DockerHub Account and create a PAT.
-2. Add the DockerHub PAT to Jenkins as a credential (type: Username: iquantc & Password: PAT)
-3. Generate pipeline syntax with "withCredentials", Bindings: Username&password (separated), give it 
-```sh
-Username Variable: DOCKER_USER
-Password Variable: DOCKER_PASS
-```
-and select the correct Credentials.
-
-4. Generate Pipeline Script; copy and paste it the Jenkinsfile stage.
-
-
 ## Deployment to Google Cloud Platform (GCP)
 
 ### Push docker image to Artifact Registry & Deploy to Google Cloud Run
@@ -348,7 +334,7 @@ Go to your GCP Console home,
 4. Permissions:- Search and Add Roles: Owner, continue
 5. Principals with access:- Done
 6. Generate a Json Key:- After creating the service account, click on the service account to open it and Click on "Keys" tab, click "Add Key", "Create new key", "JSON", and the key is downloaded onto your system (save if securely)
-7. Go to "Artifact Registry" > Create repository: format=Docker, mode=standard, location type=region = us, desc=Docker repository, project=focal-dock-440200-u5
+7. Go to "Artifact Registry" > Create repository: format=Docker, mode=standard, location type=region = us, desc=Docker repository, project=focal-dock-**
 
 
 ### Add GCP Credential to Jenkins
