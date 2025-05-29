@@ -8,6 +8,8 @@ pipeline {
 	SONAR_SCANNER_HOME = tool 'sonar7'
 	IMAGE_NAME = "java-app"
         IMAGE_TAG = "${BUILD_NUMBER}"
+	GCP_PROJECT_ID = "focal-dock-440200-u5"
+	FULL_IMAGE_NAME = "us-docker.pkg.dev/${GCP_PROJECT_ID}/java-app-repo-02/${IMAGE_NAME}:${IMAGE_TAG}"
     }
     stages {
         stage('Initialize Pipeline'){
@@ -72,20 +74,40 @@ pipeline {
 		sh "trivy --severity HIGH,CRITICAL --no-progress --format table -o trivyFSScanReport.html image ${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
-		stage('Authenticate with GCP, Tag & Push to Artifact Registry') {
+	stage('Authenticate with GCP, Tag & Push to Artifact Registry') {
             steps {
-				echo 'Authenticate with GCP, tag and Push Image to Artifact Registry'
+		echo 'Authenticate with GCP, tag and Push Image to Artifact Registry'
+		withCredentials([file(credentialsId: 'gcpjmsa', variable: 'gcpCred')]) {
+    			withEnv(['GOOGLE_APPLICATION_CREDENTIALS=$gcpCred']) {
+				sh '''
+					echo Activating GCP service account...
+                    			gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                    			gcloud config set project $GCP_PROJECT_ID
+		       
+                    			echo Configuring Docker to use gcloud credentials...
+                    			gcloud auth configure-docker us-docker.pkg.dev --quiet
+    				'''
+				script {
+					sh '''
+						gcloud artifacts repositories create java-app-repo-02 --repository-format=docker --location=us --description="Docker repository" --project=$GCP_PROJECT_ID
+     					'''
+					sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${FULL_IMAGE_NAME}"
+					sh "docker push ${FULL_IMAGE_NAME}"
+					echo "Image pushed to: ${FULL_IMAGE_NAME}"
+				}
+			}
+		}
             }
         }
-	    stage('Deploy to Cloud Run') {
-		    steps {
-				echo 'Deploying Image to Google Cloud Run'
+	stage('Deploy to Cloud Run') {
+		steps {
+			echo 'Deploying Image to Google Cloud Run'
 		    }
 	    }
-	    stage('Get Cloud Run Service URL') {
+	stage('Get Cloud Run Service URL') {
             steps {
-				echo 'Getting Cloud Run Service URL'
-            }
-        }
+			echo 'Getting Cloud Run Service URL'
+            		}
+       	 	}
 	}
 }
