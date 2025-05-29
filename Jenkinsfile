@@ -123,6 +123,18 @@ pipeline {
 	stage('Get Cloud Run Service URL') {
             steps {
 			echo 'Getting Cloud Run Service URL'
+		    	withCredentials([file(credentialsId: 'gcpjmsa', variable: 'gcpCred')]) {
+    				withEnv(["GOOGLE_APPLICATION_CREDENTIALS=$gcpCred"]) {
+					sh '''
+                    				SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
+                        				--platform managed \
+                        				--region $REGION \
+                        				--format="value(status.url)")
+			    			echo "Service deployed successfully!"
+                        			echo "Service URL: $SERVICE_URL"
+                			'''
+					}
+				}
             		}
        	 	}
 	}
