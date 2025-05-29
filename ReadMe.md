@@ -1,4 +1,4 @@
-# Jenkins CI/CD Pipeline for Java Application
+# Deploy App to Google Cloud Run using Jenkins CI/CD Pipeline
 
 
 ## Requirements
@@ -8,10 +8,10 @@
 3. Shell:       Commands to Build, Test, and Deploy
 3. Jenkins:     CI/CD Pipeline Tool
 4. Docker:      Containerization Tool
-5. 
+5. GCP Account & Google Cloud SDK
 
-### Set up Environment
 
+### Test the Application Locally
 Install Java
 ```sh
 sudo apt update
@@ -32,27 +32,13 @@ mvn clean package
 ```
 This creates 2 JAR files in the target directory:
 1. hello-world-1.0-SNAPSHOT.jar - Executable JAR file with all dependencies included
-2. hello-world-1.0-SNAPSHOT.jar.original - Original Non-executable JAR without dependencies (back up of JAR file
-                                            before Spring Boot processed it)
-
+2. hello-world-1.0-SNAPSHOT.jar.original - Original Non-executable JAR without dependencies (back up of JAR file before Spring Boot processed it)
 
 
 ### Run the Tests
 ```sh
 mvn test
 ```
-
-### Run The App Locally
-Run this command below in a dedicated terminal:
-```sh
-java -jar target/hello-world-1.0-SNAPSHOT.jar
-```
-
-Open your browser to: 
-```sh
-http://localhost:8080
-```
-Ctrl + C to exit
 
 ### Additional Configuration (Optional)
 If you want to change the port from the default 8080, create a file - src/main/resources/application.properties
@@ -61,20 +47,26 @@ with the following content:
 server.port=8090
 ```
 
-To run the Java App Locally, use the command:
+### Run The App Locally
+To run the Java App Locally, run the command below in a dedicated terminal:
 ```sh
 java -jar target/hello-world-1.0-SNAPSHOT.jar --server.port=8090
 ```
 
+Open your browser to: 
+```sh
+http://localhost:8090
+```
+Ctrl + C to exit
+
 
 ## Dockerize the Java App
-
 ### Build the Docker image
 ```sh
 docker images
 ```
 
-I'm gonna use port 8090
+I'm gonna use the port 8090
 ```sh
 docker build -t java-app .
 ```
@@ -86,7 +78,7 @@ docker run -p 8090:8090 java-app
 
 Open your browser to: 
 ```sh
-http://localhost:8080
+http://localhost:8090
 ```
 Ctrl + C to exit
 
@@ -162,6 +154,7 @@ docker logs -f jenkins-dind
 ```
 Ctrl + C to exit logs
 
+
 ### Integrate Jenkins & GitHub Repository
 In your GitHub Account, 
 1. Create a PAT  with scope (repo & admin:repo_hook), and 
@@ -205,8 +198,7 @@ exit
 
 
 
-## Set up SonarQube Analysis with a Container
-
+## Set up SonarQube with a Container
 Run the command below to create the SonarQube Container on the same Docker network as Jenkins:
 ```sh
 docker run -d --name sonarqube-dind \
@@ -242,7 +234,7 @@ Password: admin
 and Change the password.
 
 
-***Login to Jenkins Container & Establish Communication to the SonarQube Container***
+### Login to Jenkins Container & Establish Communication to the SonarQube Container
 ```sh
 docker exec -it jenkins-dind bash
 ```
@@ -253,7 +245,6 @@ apt-get install iputils-ping -y
 exit
 ```
 
-
 ***Use Jenkins Container bash to Ping SonarQube Container***
 ```sh
 docker exec -it jenkins-dind ping sonarqube-dind
@@ -261,9 +252,7 @@ docker exec -it jenkins-dind ping sonarqube-dind
 You will see bytes of data coming in showing established connection between the 2 containers.
 
 
-
 ### Create a SonarQube Token and Add it to Jenkins Credentials:
-
 1. Click on the User Account, and click on "My Account"
 2. Go to Security, create a token of type "Global Analysis Token", expiry date, Name: jmsonar, and Generate.
 3. Copy and Save the token somewhere safe.
@@ -274,7 +263,6 @@ You will see bytes of data coming in showing established connection between the 
 
 
 ### Create Project in SonarQube
-
 Create a Local Project in SonarQube and provide the ff:
 1. Project display name, 
 2. Project key, 
@@ -284,37 +272,9 @@ Create a Local Project in SonarQube and provide the ff:
 6. Click on "Locally", Use existing token and enter name of your sonar token as value "jmsonar" and continue
 7. Run analysis on your project: Select Other & Linux. Copy the execution script and add to your pipeline script. We will modify it a bit later.**
 8. SonarQube Installation Name or SonarQubeEnv: sonar (the setup we did @ Manage Jenkins > System), add to pipeline
-9. SonarQube Tool Name: sonar7 (the setup we did @ Manage Jenkins > Tools), add to pipeline as an environment variable like below: 
-```sh
-environment {
-        SONAR_SCANNER_HOME = tool 'sonar7'
-    }
-```
-10. Create a sonar-project.properties file in root of your GitHub Repository and add the SonarQube project key and organization (GitHub Username). i.e.,
-```sh
-sonar.projectKey=jm
-sonar.organization=iquantc
-```
+9. SonarQube Tool Name: sonar7 (the setup we did @ Manage Jenkins > Tools), add to pipeline as an environment variable.
+10. Create a sonar-project.properties file in root of your GitHub Repository and add the SonarQube project key and organization (GitHub Username). 
 11. Since the application is Java-based, you must specify the location of the Java binaries which is usually stored in a "target/classes" directory. Add it to the SonarScanner block as: "-Dsonar.java.binaries=target/classes". 
-12. Overall, command for SonarScanner will look something like this: 
-```sh
-stage('SonarQube Analysis'){
-            steps {
-                withCredentials([string(credentialsId: 'jmsonar', variable: 'sonarToken')]) {
-                    withSonarQubeEnv('sonar') {
-                        sh """
-                            ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                            -Dsonar.projectKey=jm \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://172.18.0.3:9000 \
-                            -Dsonar.java.binaries=target/classes \
-                            -Dsonar.token=$sonarToken
-                        """
-                    }
-                }
-            }
-        }
-```
 
 
 ***To Generate Jenkins Pipeline Script***
@@ -325,7 +285,6 @@ stage('SonarQube Analysis'){
 
 
 ## Trivy File System Scan
-
 Login to the Jenkins Container
 ```sh
 docker exec -it jenkins-dind bash
@@ -367,7 +326,6 @@ Now, scan the docker image with Trivy.
 
 
 ## Login, Tag & Push Docker Image to DockerHub
-***Login***
 1. Login to your DockerHub Account and create a PAT.
 2. Add the DockerHub PAT to Jenkins as a credential (type: Username: iquantc & Password: PAT)
 3. Generate pipeline syntax with "withCredentials", Bindings: Username&password (separated), give it 
@@ -378,49 +336,26 @@ Password Variable: DOCKER_PASS
 and select the correct Credentials.
 
 4. Generate Pipeline Script; copy and paste it the Jenkinsfile stage.
-5. The Bindings is separated, so the stage will look like: 
 
-```sh
-stage('Login to DockerHub') {
-    steps {
-        echo 'Logging in to DockerHub'
-        withCredentials([usernamePassword(
-            credentialsId: 'jmDHub',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS' 
-            )]) {
-            sh '''
-                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            '''
-        }
-    }
-}
-```
 
-# Deployment to Google Cloud Platform (GCP)
+## Deployment to Google Cloud Platform (GCP)
 
-## Push docker image to Artifact Registry & Deploy to Google Cloud Run
+### Push docker image to Artifact Registry & Deploy to Google Cloud Run
 Go to your GCP Console home, 
 1. Click on "APIs & Services
 2. Search and Enable Artifact Registry API
 3. Create a GCP Service Account:- Go to IAM & Admin > Service Accounts > Create service account > 
-```sh
-name: jmsaew, 
-id: jmsanew, 
-Email address: jmsanew@focal-dock-440200-u5.iam.gserviceaccount.com, 
-desc: jmsanew, create and continue.
-```
 4. Permissions:- Search and Add Roles: Owner, continue
 5. Principals with access:- Done
 6. Generate a Json Key:- After creating the service account, click on the service account to open it and Click on "Keys" tab, click "Add Key", "Create new key", "JSON", and the key is downloaded onto your system (save if securely)
 7. Go to "Artifact Registry" > Create repository: format=Docker, mode=standard, location type=region = us, desc=Docker repository, project=focal-dock-440200-u5
 
 
-***Add GCP Credential to Jenkins***
+### Add GCP Credential to Jenkins
 On Jenkins > Manage Jenkins > Credentials > Kind: Secret file, ID: gcp-jmsa, upload the .json key file
 
 
-***Install Google Cloud SDK (gcloud) on Jenkins Container***
+### Install Google Cloud SDK (gcloud) on Jenkins Container
 Login to the Jenkins Container
 ```sh
 docker exec -it jenkins-dind bash
@@ -441,127 +376,18 @@ exit
 ```
 
 
-***Push Docker Image to GCR***
+### Push Docker Image to GCR
 In Jenkins > Pipeline Syntax > withCredentials > Bindings: Secret file, Variable: gcpCred, Credentials: select the gcp credential from earlier > Generate Pipeline Script. Copy script to Jenkinsfile & edit. 
 
 
-
-***Deploy Java App Docker Image***
+### Deploy Java App Docker Image
 Make sure that Cloud Run API is enabled. 
 Run the Jenkins pipeline to deploy
 
-## Setup GitHub Webhooks
 
+### Setup Jenkins GitHub Webhooks
+Automate Jenkins pipeline build on "git push"
 
-## Clean Up
-Delete the Cloud Run service
-Stop and Delete Jenkins & SonarQube containers
-
-
-
-
-# Deployment to Microsoft Azure
-## Push docker image to ACR & Deploy to ACI
-
-Make sure you have Azure subscription set up (a default one is created when you sign up). 
-
-
-***Install Azure CLI on Jenkins Container***
-Login to the Jenkins Container
-```sh
-docker exec -it jenkins-dind bash
-```
-
-```sh
-apt-get update -y
-apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg jq
-curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-```
-
-Check that installation was successful:
-```sh
-az version 
-exit
-```
-
-***Login to Azure via CLI***
-```sh
-az login
-```
-1. This command will provide a link and code to authenticate on a browser.
-2. Select a number for the subscription you want to use (e.g., 1)
-3. Close the authentication page on your browser.
-4. With the Subscription ID, create an Azure Service Principal
-
-
-***Create Azure Service Principal***
-Contributor Role in Azure allows users to create, manage, and delete resources but can't delegate access like the "Owner" Role (Admin Role):
-```sh
-az ad sp create-for-rbac --name jenkins-sp --role Contributor \
-  --scopes /subscriptions/<SUBSCRIPTION_ID> \
-  --sdk-auth
-```
-You can verify it on Azure Portal in your Azure Subscription > Access ctrl (IAM) > Role assignments.
-
-
-5. Copy the JSON output on the terminal after creating the Azure Service Principal in a .json file.
-6. Create a "Secret file" credential in Jenkins Credentials for it.
-7. Register your Azure subscription to use ContainerRegistry. First, check if it's registered:
-```sh
-az provider show --namespace Microsoft.ContainerRegistry --query "registrationState"
-```
-If not, then register it (& rerun previous command to check): 
-```sh
-az provider register --namespace Microsoft.ContainerRegistry
-```
-
-8. Create your ACR repo:
-
-***Create Azure Container Registry (ACR)***
-Create a Resource Group (if you don't have one already). The ACR_NAME is the repo name (must be Globally unique, alphanumeric & lowercase):
-```sh
-az acr create --resource-group <RESOURCE_GROUP> \
-  --name <ACR_NAME> --sku Basic
-```
-For example: 
-```sh
-az acr create --resource-group iquant-00   --name javaapprepo00 --sku Basic
-```
-On Azure Portal > Go to Container Registries and Refresh to verify
-
-
-***Push Docker Image to ACR***
-In Jenkins > Pipeline Syntax > withCredentials > Bindings: Secret file, Variable: AZURE_CRED, Credentials: select the Azure credential from earlier > Generate Pipeline Script. Copy script to Jenkinsfile & edit. 
-
-Once pushed, verify on ACR > open the javaapprepo00 > Go to Services & select Repositories > Click on the repo to see the pushed docker image.
-
-
-
-***Deploy Java App Docker Image to ACI***
-Run the Jenkins pipeline to deploy
-
-***Enable Admin Access to ACR***
-In case you get error with ACI pulling image from ACR, run this command:
-
-```sh
-docker exec -it jenkins-dind bash
-```
-```sh
-az acr update -n javaapprepo00 --admin-enabled true
-```
-
-Register your Azure subscription to use ContainerInstance. First, check if it's registered:
-```sh
-az provider show --namespace Microsoft.ContainerInstance --query "registrationState"
-```
-If not, then register it (& rerun previous command to check): 
-```sh
-az provider register --namespace Microsoft.ContainerInstance
-```
-
-On Azure Portal > Go to Container Instances and Refresh to verify > Settings and click Containers
-
-## Setup GitHub Webhooks
 1. On Jenkins, Go to the Jenkins job > Configure > Select the "GitHub hook trigger for GITScm polling" trigger > Apply & Save
 2. On GitHub project repo > Settings > Webhooks > Add webhook 
 3. But our Jenkins container is running locally thus GitHub can't locate its endpoint on the cloud. 
@@ -597,8 +423,10 @@ Add webhook
 
 
 ## Clean Up
-Overview > Stop & Delete the Container
-Stop and Delete Jenkins & SonarQube containers
+1. Delete the Cloud Run service
+2. Delete the Artifact Registry Repo and Image
+3. Delete the GCP Service Account
+4. Stop and Delete Jenkins & SonarQube containers
 
 
-
+# Please LIKE, COMMENT, & SUBSCRIBE To iQuant on YouTube !!!
