@@ -11,6 +11,78 @@
 5. GCP Account & Google Cloud SDK
 
 
+### Test the Application Locally
+Install Java
+```sh
+sudo apt update
+sudo apt install openjdk-11-jre-headless
+java -version
+```
+
+Install Maven
+```sh
+sudo apt update
+sudo apt install maven
+mvn -version
+```
+
+### Build the Application
+```sh
+mvn clean package
+```
+This creates 2 JAR files in the target directory:
+1. hello-world-1.0-SNAPSHOT.jar - Executable JAR file with all dependencies included
+2. hello-world-1.0-SNAPSHOT.jar.original - Original Non-executable JAR without dependencies (back up of JAR file before Spring Boot processed it)
+
+
+### Run the Tests
+```sh
+mvn test
+```
+
+### Additional Configuration (Optional)
+If you want to change the port from the default 8080, create a file - src/main/resources/application.properties
+with the following content:
+```sh
+server.port=8090
+```
+
+### Run The App Locally
+To run the Java App Locally, run the command below in a dedicated terminal:
+```sh
+java -jar target/hello-world-1.0-SNAPSHOT.jar --server.port=8090
+```
+
+Open your browser to: 
+```sh
+http://localhost:8090
+```
+Ctrl + C to exit
+
+
+## Dockerize the Java App
+### Build the Docker image
+```sh
+docker images
+```
+
+I'm gonna use the port 8090
+```sh
+docker build -t java-app .
+```
+
+### Run the Docker container
+```sh
+docker run -p 8090:8090 java-app
+```
+
+Open your browser to: 
+```sh
+http://localhost:8090
+```
+Ctrl + C to exit
+
+
 ## Set up Jenkins with a Container
 We want to build a docker image later with our Jenkins Pipeline, so we need a Jenkins Container or VM with Docker in it (i.e., Docker-in-Docker or DinD)
 
