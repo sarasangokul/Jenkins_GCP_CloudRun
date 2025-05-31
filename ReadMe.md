@@ -285,7 +285,7 @@ sudo apt-get update && sudo apt-get install -y google-cloud-sdk
 ```
 Check that installation was successful:
 ```sh
-gloud version
+gcloud version
 exit
 ```
 
