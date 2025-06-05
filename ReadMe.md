@@ -1,5 +1,5 @@
 # Deploy App to Google Cloud Run using Jenkins CI/CD Pipeline
-
+In this hands-on DevOps tutorial, we’ll walk through building a full-fledged Jenkins CI/CD pipeline to build, test, store, and deploy a Java application to Google Cloud Run using industry-standard tools and best practices.
 
 ## Requirements
 1. Java:        Language & Framework 
