@@ -24,8 +24,8 @@ pipeline {
         stage('Checkout GitHub Codes'){
             steps {
                 echo 'Checking out GitHub Codes ...'
-		checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'jenkins-gcp', url: 'https://github.com/iQuantC/Jenkins_GCP_CloudRun.git']])
-            }
+				checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'jenkins-gcp', url: 'https://github.com/sarasangokul/Jenkins_GCP_CloudRun.git']])
+			}
         }
         stage('Maven Build'){
             steps {
