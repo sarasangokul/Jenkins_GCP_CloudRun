@@ -7,7 +7,7 @@ pipeline {
     environment {
 	SONAR_SCANNER_HOME = tool 'sonar7'
 	IMAGE_NAME = "java-app"
-        IMAGE_TAG = "${BUILD_NUMBER}"
+    IMAGE_TAG = "${BUILD_NUMBER}"
 	GCP_PROJECT_ID = "focal-dock-440200-u5"
 	FULL_IMAGE_NAME = "us-docker.pkg.dev/${GCP_PROJECT_ID}/java-app-repo-02/${IMAGE_NAME}:${IMAGE_TAG}"
 	SERVICE_NAME = "java-app-service"
